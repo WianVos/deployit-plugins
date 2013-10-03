@@ -1,0 +1,1 @@
+${deployed.container.splunkHome}/bin/splunk remove app ${deployed.deployable.appName} -auth ${deployed.container.adminUser}:${deployed.container.adminPassword}

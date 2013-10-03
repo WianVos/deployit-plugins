@@ -1,0 +1,118 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<synthetic xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+           xmlns="http://www.xebialabs.com/deployit/synthetic"
+           xsi:schemaLocation="http://www.xebialabs.com/deployit/synthetic synthetic.xsd">
+
+    <!-- container types --> 
+
+    <type type="cts.ApacheHttpdServer" extends="generic.Container"
+          description="Apache HTTPD web server">
+        <!-- unhide the start, stop etc. commands -->
+        <property name="startScript" default="cts/apache/start" hidden="false" description="The command to start Apache. Arguments containing spaces are not supported"/>
+        <property name="stopScript" default="cts/apache/stop" hidden="false" description="The command to stop Apache. Arguments containing spaces are not supported"/>
+        <property name="restartScript" default="&lt;#assign restart=(container.restartCommand)!''&gt;&lt;#if restart != ''&gt;cts/apache/restart&lt;#else&gt;cts/apache/stopstart&lt;/#if&gt;"  hidden="true" description="The command to restart or reload Apache. If left blank, the sequence 'stop, start' is used. Arguments containing spaces are not supported" />
+        <property name="startCommand" hidden="true" required="false" description="The command to start Apache. Arguments containing spaces are not supported" />
+        <property name="startWaitTime" kind="integer" default="10" description="Duration (in secs) to wait after the start server step has been executed"/>
+        <property name="stopCommand"  hidden="true" required="false" description="The command to stop Apache. Arguments containing spaces are not supported" />
+        <property name="stopWaitTime" kind="integer" default="10" description="Duration (in secs) to wait after the stop server step has been executed"/>
+        <property name="restartCommand" required="false" hidden="false" description="The command to restart Apache. If left blank, reload command is used. If reload command is also blank than the sequence 'stop, start' is used. Arguments containing spaces are not supported" />
+        <property name="restartWaitTime" kind="integer" default="10" description="Duration (in secs) to wait after the restart server step has been executed"/>
+        <property name="defaultDocumentRoot" description="The directory in which document roots for virtual hosts should be created. Web content deployed without a virtual host will also be copied into this directory" default="/var/www"/>
+        <property name="configurationFragmentDirectory" description="The directory into which Apache configuration files (for virtual host definitions) should be written" default="/etc/httpd/conf.d" />
+        <property name="sitesEnabledDirectory" description="The directory into which Apache vhost configuration files (for virtual host definitions) should be written" default='/etc/httpd/sites-enabled'/>
+        <method name="start" description="Start Apache"/>
+        <method name="stop" description="Stop Apache"/>
+        <method name="restart" description="Restart Apache"/>
+    </type>
+
+     <type type="cts.ApacheCS" extends="cts.ApacheHttpdServer" description="Apache content switch server">
+        <property name="port" description="The virtual host port. Use '*' to match all ports" />
+        <property name="serverName" description="the servername for this virtual host" required="true" default="${container.host}" />
+        <property name="documentRoot" required="true" description="The document root for web content using this virtual host. If left blank, a directory is created in the web server's document root" default="${defaultDocumentRoot}/${serverName}" />
+        <property name="targetDirectory" hidden="true" default="${sitesEnabledDirectory}" description="Target directory name" />
+         <property name="includeDir" required="true" description="the include dir where configuration fragments will be deployed to" hidden="true" default="${targetDirectory}/${deployed.name}_dir.d" />
+        <property name="virtualHostName" hidden="true" default="${name}"/>
+        <property name="sitesEnabledDirectory" description="The directory into which Apache vhost configuration files (for virtual host definitions) should be written" default='/etc/httpd/sites-enabled'/>
+    </type>
+
+    <type type="cts.ApacheCSVhost" extends="generic.NestedContainer"  description="Apache content switch server" >
+        <property name="parent" required="true" kind="ci" referenced-type="cts.ApacheCS" as-containment="true"/>
+        <property name="serverName" description="the servername for this virtual host" required="true" default="${container.host}" />
+        <property name="listeningHost" description="The virtual host name. Use '*' to match all hosts" />
+        <property name="port" description="The virtual host port. Use '*' to match all ports" />
+        <property name="serverName" description="the servername for this virtual host" required="true" default="${deployed.host}" />
+        <property name="documentRoot" required="true" description="The document root for web content using this virtual host. If left blank, a directory is created in the web server's document root" default="${container.defaultDocumentRoot}/${container.serverName}" />
+        <property name="includeDir" required="true" description="the include dir where configuration fragments will be deployed to" hidden="true" default="/etc/httpd/sites-enabled/${container.name}.d" />
+         <property name="configurationFragmentDirectory" description="The directory into which Apache configuration files (for virtual host definitions) should be written" default="/etc/httpd/sites-enabled/${container.name}_dir.d" />
+        <property name="virtualHostName" hidden="true" default="${name}"/>
+    </type>
+
+    <!-- deployable types -->
+
+    <type type="cts.DeployedApacheConfFile" extends="generic.CopiedArtifact" deployable-type="cts.ApacheConfFile" container-type="cts.ApacheHttpdServer" description="Deployed Apache configuration file">
+        <generate-deployable type="cts.ApacheConfFile" extends="generic.File" description="Apache configuration file" />
+        <property name="createVerb" default="Deploy" hidden="true" />
+        <property name="destroyVerb" default="Remove" hidden="true" />
+
+        <property name="targetDirectory" hidden="true" default="${deployed.container.configurationFragmentDirectory}" description="Target directory name" />
+        <property name="targetFile" default="${deployed.name}" description="Target file name" hidden="true"/>
+        <property name="restartRequired" kind="boolean" required="false" default="true" hidden="true"/>
+    </type>
+
+    <type type="cts.ApacheConfFragment" extends="generic.ProcessedTemplate" deployable-type="cts.ApacheConfFragmentSpec"  description="Deployed generated Apache configuration file" container-type="cts.ApacheHttpdServer">
+        <generate-deployable type="cts.ApacheConfFragmentSpec" extends="generic.Resource" description="Specification for an Apache configuration fragment."/>
+
+        <property name="createVerb" default="Deploy" hidden="true" />
+        <property name="destroyVerb" default="Remove" hidden="true" />
+
+        <property name="targetFile" default="${deployed.name}.conf" description="Target file name" hidden="true"/>
+        <property name="targetDirectory" hidden="true" default="${deployed.container.includeDir}" description="Target directory name" />
+        <property name="template" hidden="true" default="cts/apache/${deployed.type}.conf.ftl" description="Configuration fragment template file name."/>
+        <property name="restartRequired" kind="boolean" required="false" default="true" hidden="true"/>
+    </type>
+
+    
+   
+
+    <type type="cts.ApacheCSConfFragment" extends="generic.ProcessedTemplate" deployable-type="cts.ApacheCSConfFragmentSpec"  description="Deployed generated Apache configuration file" container-type="cts.ApacheCSVhost">
+        <generate-deployable type="cts.ApacheCSConfFragmentSpec" extends="generic.Resource" description="Specification for an Apache configuration fragment."/>
+
+        <property name="createVerb" default="Deploy" hidden="true" />
+        <property name="destroyVerb" default="Remove" hidden="true" />
+
+        <property name="targetFile" default="${deployed.name}.conf" description="Target file name" hidden="true"/>
+        <property name="targetDirectory" hidden="true" default="${deployed.container.includeDir}" description="Target directory name" />
+        <property name="template" hidden="true" default="cts/apache/${deployed.type}.conf.ftl" description="Configuration fragment template file name."/>
+        <property name="restartRequired" kind="boolean" required="false" default="true" hidden="true"/>
+    </type>
+    <type type="cts.ApacheCSProxyPass" extends="cts.ApacheCSConfFragment" deployable-type="cts.ApacheCSProxyPassSpec" container-type="cts.ApacheCSVhost" >
+        <generate-deployable type="cts.ApacheCSProxyPassSpec" extends="cts.ApacheCSConfFragmentSpec" />
+        <property name="virtualHost" kind="ci" required="false" referenced-type="cts.ApacheCSVhost"  description="Virtual host which this web content maps to."/>
+        <property name="ProxyPass" kind="map_string_string" description="the proxypass directives" required="true" hidden="false" />
+        <property name="connectionTimeOut" description="proxy connection timeout setting" default="30" required="false" hidden="false"/>
+        <property name="timeOut" description="proxy timeout setting" default="10" required="false" hidden="false"/>
+        <property name="targetDirectory" hidden="true" default="${deployed.container.includeDir}" description="Target directory name" />
+        <property name="targetFile" default="${deployed.name}_proxy.conf" description="Target file name" hidden="true"/>
+        <property name="ProxyVia" description="the proxy via directive setting" required="false"/>
+        <property name="ProxyTimeout" description="the proxy via directive setting" default="120" hidden="false"/>
+        <property name="ProxyReceiveBufferSize" description="the proxy receivebuffersize directive setting" required="false" />
+        <property name="ProxyPreserveHost" description="the proxy preserve host directive setting" required="false" />
+        <property name="ProxyBlock" description="the proxy block directive setting" required="false" />
+        <property name="options" required="false" default="" description="The proxy parameters"/>
+        <property name="reverse" kind="boolean" required="false" default="false" description="Whether to set up a ProxyPassReverse also" />
+        <property name="createTargetDirectory" default="true" kind="boolean" hidden="true"/>
+        <property name="targetDirectoryShared" default="true" kind="boolean" hidden="true"/>
+    </type>
+    <type type="cts.ApacheCSRewriteRule" extends="cts.ApacheCSConfFragment" deployable-type="cts.ApacheCSRewriteRuleSpec" container-type="cts.ApacheCSVhost"  >
+        <generate-deployable type="cts.ApacheCSRewriteRuleSpec" extends="cts.ApacheCSConfFragmentSpec" />
+        <property name="virtualHost" kind="ci" required="false" referenced-type="cts.ApacheCSVhost"  description="Virtual host which this web content maps to."/>
+        <property name="rewriteRules" kind="set_of_string" hidden="false" required="true" />
+        <property name="rewriteConditions" kind="set_of_string" hidden="false" required="false" />
+        <property name="createTargetDirectory" default="true" kind="boolean" hidden="true"/>
+        <property name="targetDirectoryShared" default="true" kind="boolean" hidden="true"/>
+        <property name="targetDirectory" hidden="true" default="${deployed.container.includeDir}" description="Target directory name" />
+        <property name="targetFile" default="${deployed.name}_rewrite.conf" description="Target file name" hidden="true"/>
+    </type>
+
+   
+</synthetic>

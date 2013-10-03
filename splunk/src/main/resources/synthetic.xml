@@ -1,0 +1,126 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<synthetic xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+           xmlns="http://www.xebialabs.com/deployit/synthetic"
+           xsi:schemaLocation="http://www.xebialabs.com/deployit/synthetic synthetic.xsd">
+
+    <type type="splk.BaseInstallation" extends="generic.Container" description="Splunk basic container." >
+        <property name="startScript" default="splk/splunk/start" hidden="true" description="The command to start Splunk. Arguments containing spaces are not supported"/>
+        <property name="stopScript" default="splk/splunk/stop" hidden="true" description="The command to stop Splunk. Arguments containing spaces are not supported"/>
+        <property name="restartScript" default="splk/splunk/restart"  hidden="true" description="The command to restart or reload Splunk. used. " />
+        <property name="startWaitTime" kind="integer" default="30" description="Duration (in secs) to wait after the start server step has been executed"/>
+        <property name="stopWaitTime" kind="integer" default="30" description="Duration (in secs) to wait after the stop server step has been executed"/>
+        <property name="restartWaitTime" kind="integer" default="60" description="Duration (in secs) to wait after the restart server step has been executed"/>
+        <property name="splunkHome" kind="string" default="/opt/splunk" description="the location of the splunk homedir"/>
+        <property name="adminUser" kind="string" required="true" default="admin"/>
+        <property name="adminPassword" kind="string" required="true"/>
+        <method name="start" description="Start Splunk"/>
+        <method name="stop" description="Stop Splunk"/>
+        <method name="restart" description="Restart Splunk"/>
+    </type>
+
+    
+    
+
+    
+
+    <type type="splk.ZippedApp" extends="generic.Archive"> 
+        <property name="appName" hidden="false" required="true"/>   
+        <property name="scanPlaceholders" hidden="true" required="true" default="true" kind="boolean"/>
+    </type>
+
+    <!-- Indexer stuff -->
+    
+    <type type="splk.Indexer" extends="splk.BaseInstallation" description="Splunk Indexer installation">
+        <property name="splunkHome" kind="string" default="/opt/splunk" description="the location of the splunk homedir"/>
+    </type>
+
+    <type type="splk.SplunkIndexApp" extends="generic.ExecutedScript" deployable-type="splk.ZippedApp" description="basic splunk app" container-type="splk.Indexer">
+        <property name="createScript" default="splk/splunk/installApp" hidden="true"/>
+        <property name="destroyScript" default="splk/splunk/removeApp" hidden="true"/>
+        <property name="appTargetDirectory" default="${deployed.container.splunkHome}/etc/apps/" />
+        <property name="restartRequired" default="true" hidden="true" kind="boolean"/>
+        <property name="createOrder" default="50" hidden="true" kind="integer"/>
+    </type>
+
+    <type type="splk.IndexAppConf" extends="generic.CopiedArtifact" deployable-type="splk.IndexAppConfFile"  description="Splunk App configfile" container-type="splk.UniversalForwarder">
+        <property name="createVerb" default="Deploy" hidden="true" />
+        <property name="destroyVerb" default="Remove" hidden="true" />
+        <property name="targetApp" kind="ci" required="false" referenced-type="splk.SplunkShApp"  description="Splunk App which this configuration maps to."/> 
+        <property name="targetDirectory" description="Target directory name" hidden="true" default="${deployed.container.splunkHome}/etc/apps/${deployed.targetApp.name}/local/"/>
+        <property name="restartRequired" kind="boolean" required="false" default="true" hidden="true"/>
+        <property name="createTargetDirectory" default="true" hidden="true" kind="boolean"/>
+        <property name="targetDirectoryShared" default="true" hidden="true" kind="boolean"/>
+        <property name="createOrder" default="51" hidden="true" kind="integer"/>
+    </type>
+
+    <type type="splk.IndexAppConfFile" extends="generic.File" > 
+        <property name="scanPlaceholders" hidden="true" required="true" default="true" kind="boolean"/>
+    </type>
+
+    <!-- searchhead stuff -->
+
+    <type type="splk.SearchHead" extends="splk.BaseInstallation" description="Splunk Searchhead installation">
+        <property name="splunkHome" kind="string" default="/opt/splunk" description="the location of the splunk homedir"/>
+    </type>
+
+
+    <type type="splk.SplunkShApp" extends="generic.ExecutedScript" deployable-type="splk.ZippedApp" description="basic splunk app" container-type="splk.SearchHead">
+        <property name="createScript" default="splk/splunk/installApp" hidden="true"/>
+        <property name="destroyScript" default="splk/splunk/removeApp" hidden="true"/>
+        <property name="appTargetDirectory" default="${deployed.container.splunkHome}/etc/apps/" />
+        <property name="restartRequired" default="true" hidden="true" kind="boolean"/>
+        <property name="createOrder" default="50" hidden="true" kind="integer"/>
+    </type>
+
+    <type type="splk.ShAppConf" extends="generic.CopiedArtifact" deployable-type="splk.ShAppConfFile"  description="Splunk App configfile" container-type="splk.UniversalForwarder">
+        <property name="createVerb" default="Deploy" hidden="true" />
+        <property name="destroyVerb" default="Remove" hidden="true" />
+        <property name="targetApp" kind="ci" required="false" referenced-type="splk.SplunkShApp"  description="Splunk App which this configuration maps to."/> 
+        <property name="targetDirectory" description="Target directory name" hidden="true" default="${deployed.container.splunkHome}/etc/apps/${deployed.targetApp.name}/local/"/>
+        <property name="restartRequired" kind="boolean" required="false" default="true" hidden="true"/>
+        <property name="createTargetDirectory" default="true" hidden="true" kind="boolean"/>
+        <property name="targetDirectoryShared" default="true" hidden="true" kind="boolean"/>
+        <property name="createOrder" default="51" hidden="true" kind="integer"/>
+    </type>
+
+    <type type="splk.ShAppConfFile" extends="generic.File" > 
+        <property name="scanPlaceholders" hidden="true" required="true" default="true" kind="boolean"/>
+    </type>
+    
+    <!-- universal forwarder stuff -->
+
+    <type type="splk.UniversalForwarder" extends="splk.BaseInstallation" description="Splunk Universal Forwarder installation">
+        <property name="splunkHome" kind="string" default="/opt/splunkforwarder" description="the location of the splunk homedir"/>
+    </type>
+
+    <type type="splk.ZippedFWApp" extends="generic.Archive"  > 
+        <property name="appName" hidden="false" required="true"/>   
+        <property name="scanPlaceholders" hidden="true" required="true" default="true" kind="boolean"/>  
+    </type>
+
+    <type type="splk.SplunkFWApp" extends="generic.ExecutedScript" deployable-type="splk.ZippedFWApp" description="basic splunk app" container-type="splk.UniversalForwarder">
+        <property name="createScript" default="splk/splunk/installApp" hidden="true"/>
+        <property name="destroyScript" default="splk/splunk/removeApp" hidden="true"/>
+        <property name="appTargetDirectory" default="${deployed.container.splunkHome}/etc/apps/" />
+        <property name="restartRequired" default="true" hidden="true" kind="boolean"/>
+        <property name="createOrder" default="50" hidden="true" kind="integer"/>
+    </type>
+  
+
+
+     <type type="splk.FwAppFWConf" extends="generic.CopiedArtifact" deployable-type="splk.FwAppConfFile"  description="Splunk App configfile" container-type="splk.UniversalForwarder">
+        <property name="createVerb" default="Deploy" hidden="true" />
+        <property name="destroyVerb" default="Remove" hidden="true" />
+        <property name="targetApp" kind="ci" required="false" referenced-type="splk.SplunkFWApp"  description="Splunk App which this configuration maps to."/> 
+        <property name="targetDirectory" description="Target directory name" hidden="true" default="${deployed.container.splunkHome}/etc/apps/${deployed.targetApp.name}/local/"/>
+        <property name="restartRequired" kind="boolean" required="false" default="true" hidden="true"/>
+        <property name="createTargetDirectory" default="true" hidden="true" kind="boolean"/>
+        <property name="targetDirectoryShared" default="true" hidden="true" kind="boolean"/>
+        <property name="createOrder" default="51" hidden="true" kind="integer"/>
+    </type>
+
+    <type type="splk.FwAppConfFile" extends="generic.File" > 
+        <property name="scanPlaceholders" hidden="true" required="true" default="true" kind="boolean"/>
+    </type>
+
+</synthetic>

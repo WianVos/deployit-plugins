@@ -66,7 +66,7 @@
         <property name="destroyVerb" default="Remove" hidden="true" />
 
         <property name="targetFile" default="${deployed.name}.conf" description="Target file name" hidden="true"/>
-        <property name="targetDirectory" hidden="true" default="${deployed.container.includeDir}" description="Target directory name" />
+        <property name="targetDirectory" hidden="true" default="${deployed.container.configurationFragmentDirectory}" description="Target directory name" />
         <property name="template" hidden="true" default="cts/apache/${deployed.type}.conf.ftl" description="Configuration fragment template file name."/>
         <property name="restartRequired" kind="boolean" required="false" default="true" hidden="true"/>
     </type>
